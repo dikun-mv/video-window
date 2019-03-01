@@ -8,6 +8,8 @@
     "react-scripts": "2.1.5"
   },
   "scripts": {
+    "preinstall": "rm -f node_modules/@",
+    "postinstall": "ln -s `pwd`/src node_modules/@",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
