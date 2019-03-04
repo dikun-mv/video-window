@@ -1,25 +1,48 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 
 import FrameCounter from '@/FrameCounter';
 
 const App = () => {
   const [frame, setFrame] = useState(0);
+  const [isPIPActive, setPIPState] = useState(false);
 
-  useEffect(() => {
-    const windowPIP = window.open(`${process.env.PUBLIC_URL}/pip.html`, '_blank', 'resizable');
+  const windowPIP = useRef(null);
 
-    windowPIP.onload = () => {
-      const video = windowPIP.document.getElementsByTagName('video')[0];
+  const openPIP = useCallback(() => {
+    if (!windowPIP.current) {
+      const windowTmp = window.open(`${process.env.PUBLIC_URL}/pip.html`, '_blank', 'resizable');
 
-      video.src = `${process.env.PUBLIC_URL}/sample.mp4`;
-      windowPIP.onbeforeunload = FrameCounter(video, 30, setFrame);
+      windowTmp.onload = () => {
+        const video = windowTmp.document.getElementsByTagName('video')[0];
+
+        video.src = `${process.env.PUBLIC_URL}/sample.mp4`;
+        const destructor = FrameCounter(video, 30, setFrame);
+
+        windowTmp.onbeforeunload = () => {
+          windowPIP.current = null;
+
+          destructor();
+          setPIPState(false);
+          setFrame(0);
+        }
+      };
+
+      windowPIP.current = windowTmp;
+      setPIPState(true);
     }
+  }, []);
 
-    return () => windowPIP.close();
+  const closePIP = useCallback(() => {
+    if (windowPIP.current) {
+      windowPIP.current.close();
+    }
   }, []);
 
   return (
-    <div>Frame: {frame}</div>
+    <div>
+      <div>Frame: {frame}</div>
+      <button onClick={isPIPActive ? closePIP : openPIP}>{isPIPActive ? 'Close PIP' : 'Open PIP'}</button>
+    </div>
   );
 };
 
